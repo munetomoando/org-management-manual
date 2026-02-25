@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>企業経営シミュレーター（人事経済学）</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      height: 100vh;
+      background: #e0e7f0;
+      user-select: none;
+    }
+    #ui {
+      width: 280px;
+      background: rgba(255,255,255,0.95);
+      padding: 16px;
+      box-sizing: border-box;
+      border-right: 1px solid #ccc;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #orgPanel {
+      width: 300px;
+      background: rgba(255,255,255,0.95);
+      padding: 16px;
+      box-sizing: border-box;
+      border-left: 1px solid #ccc;
+      font-size: 14px;
+    }
+    #orgPanel h4 {
+      margin: 12px 0 4px;
+    }
+    #orgPanel ul {
+      padding-left: 18px;
+      margin: 4px 0;
+    }
+    #orgPanel li {
+      margin-bottom: 4px;
+    }
+    h3 {
+      margin: 0 0 8px 0;
+      font-weight: bold;
+      font-size: 18px;
+    }
+    .stat {
+      font-size: 14px;
+      margin: 4px 0;
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      border: 1px solid #999;
+      border-radius: 4px;
+      background: #f8f8f8;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #e0e0e0;
+    }
+    button.selected {
+      background: #4a90e2;
+      color: white;
+      border-color: #357ABD;
+    }
+    #buildStatus {
+      font-size: 13px;
+      color: #333;
+      min-height: 20px;
+      margin-top: 4px;
+      min-height: 24px;
+    }
+    #gameOver {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 20px;
+      box-sizing: border-box;
+      text-align: center;
+      font-size: 18px;
+    }
+    #gameOver h2 {
+      margin-bottom: 12px;
+      font-size: 28px;
+    }
+    #gameOver ul {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 20px 0;
+      max-width: 200px;
+      text-align: left;
+      font-size: 16px;
+    }
+    #gameOver ul li {
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.15);
+      font-weight: bold;
+    }
+    #gameOver ul li:nth-child(1) {
+      background: linear-gradient(90deg, #ffd700, #ffec8b);
+      color: #333;
+    }
+    #gameOver ul li:nth-child(2) {
+      background: linear-gradient(90deg, #c0c0c0, #e0e0e0);
+      color: #333;
+    }
+    #gameOver ul li:nth-child(3) {
+      background: linear-gradient(90deg, #cd7f32, #e6c19c);
+      color: #333;
+    }
+    #gameOver button {
+      width: auto;
+      margin: 6px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    #logPanel {
+    flex: 1;
+    background: #eef2f7;
+    padding: 16px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    font-size: 14px;
+  }
+
+  #eventLog {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .logItem {
+    background: white;
+    border-left: 4px solid #4a90e2;
+    padding: 8px 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+
+  .logItem.good { border-left-color: #2ecc71; }
+  .logItem.bad { border-left-color: #e74c3c; }
+  .logItem.info { border-left-color: #7f8c8d; }
+
+  .logYear {
+    font-size: 11px;
+    color: #666;
+  }
+  /* =========================
+   Modern UI Override
+   ========================= */
+
+body {
+  background: linear-gradient(135deg, #1f2933, #111827);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Left panel */
+#ui {
+  background: #ffffff;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+  border-radius: 0 16px 16px 0;
+}
+
+/* Stats dashboard */
+.stat {
+  display: flex;
+  justify-content: space-between;
+}
+.stat span {
+  font-weight: 700;
+  color: #2563eb;
+}
+
+/* Buttons */
+button {
+  border-radius: 10px;
+  background: #2563eb;
+  color: white;
+  border: none;
+}
+button:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+/* Organization panel */
+#orgPanel {
+  background: #ffffff;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+  border-radius: 16px 0 0 16px;
+}
+
+/* Log feed */
+#logPanel {
+  background: #f9fafb;
+}
+.logItem {
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  border-left-width: 5px;
+}
+
+/* Table */
+#roleWageTable th,
+#roleWageTable td {
+  border: none;
+  padding: 6px;
+}
+#roleWageTable tr:nth-child(even) {
+  background: #f1f5f9;
+}
+
+/* Game over */
+#gameOver {
+  backdrop-filter: blur(6px);
+}
+#gameOver h2 {
+  color: #fde047;
+}
+  </style>
+</head>
+<body>
+
+<div id="startScreen" style="
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.8);
+  color:white;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  z-index:2000;
+  font-size:18px;
+">
+  <h2 style="font-size:32px;margin-bottom:16px;">企業経営シミュレーター（人事経済学）</h2>
+  <div style="margin-bottom:20px;">
+    <strong>プレイ期間</strong><br>
+    <label><input type="radio" name="duration" value="5" checked> 5年</label>
+    <label><input type="radio" name="duration" value="10"> 10年</label>
+    <label><input type="radio" name="duration" value="20"> 20年</label>
+  </div>
+  <button id="startGameBtn" style="font-size:18px;padding:10px 24px;">
+    ゲーム開始
+  </button>
+</div>
+
+<div id="ui">
+  <h3>企業経営パネル</h3>
+  <div class="stat">年: <span id="year">1</span></div>
+  <div class="stat">残存期間: <span id="remainingYears"></span></div>
+  <div class="stat">予算: <span id="budget">1000</span></div>
+  <div class="stat">顧客基盤: <span id="customerBase">0</span></div>
+  <div class="stat">従業員数: <span id="employeeCount">0</span></div>
+  <div class="stat">利益: <span id="profit">0</span></div>
+  <div class="stat">累積利益（スコア）: <span id="score">0</span></div>
+
+  <h3>人材採用</h3>
+  <button id="btn-manufacturing" onclick="selectHire('manufacturing')">製造担当を採用</button>
+  <button id="btn-sales" onclick="selectHire('sales')">営業担当を採用</button>
+  <button id="btn-accounting" onclick="selectHire('accounting')">経理担当を採用</button>
+  <button id="btn-legal" onclick="selectHire('legal')">法務担当を採用</button>
+
+  <select id="wageSelect" style="margin-top:8px;">
+    <option value="low">低賃金（50）</option>
+    <option value="mid" selected>標準賃金（100）</option>
+    <option value="high">高賃金（200）</option>
+  </select>
+
+  <div id="hireStatus" style="font-size:13px;color:#333;min-height:24px;margin-top:4px;"></div>
+
+  <button id="nextYearBtn" onclick="nextYear()">次の年へ ▶</button>
+</div>
+
+<div id="orgPanel">
+  <h3>現在の組織構成</h3>
+  <div style="font-size:12px;color:#555;margin-bottom:8px;">
+  各職種で高賃金（200）が約20%以上いると、学習効果により
+  同職種の生産性が上昇します。
+  </div>
+  <div style="font-size:12px;color:#555;">
+  採用した年は投資期間とみなし、賃金は翌年から発生します。
+  </div>
+  <div id="orgSummary"></div>
+  <h4>職種別内訳</h4>
+  <ul id="byRole"></ul>
+  <h4>賃金別内訳</h4>
+  <ul id="byWage"></ul>
+  <h4>職種×賃金構成</h4>
+  <table id="roleWageTable" border="1" style="width:100%; font-size:12px; border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th>職種</th>
+        <th>低（50）</th>
+        <th>中（100）</th>
+        <th>高（200）</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <h4>解雇</h4>
+  <select id="fireSelect"></select>
+  <button id="fireBtn">解雇する（コスト50）</button>
+</div>
+
+<div id="logPanel">
+  <h3>企業の動向</h3>
+  <div id="eventLog"></div>
+</div>
+
+<div id="gameOver" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+  <h2 id="gameOverTitle">ゲーム終了</h2>
+  <div>最終スコア: <span id="finalScore"></span></div>
+  <div id="scoreHint" style="margin-top:16px;font-size:16px;color:#ffe;"> </div>
+  <h3 style="margin-top:20px;font-size:22px;color:#ffeb3b;">
+  🏆 ハイスコア TOP 5
+  </h3>
+  <ul id="scoreHistoryList"></ul>
+  <div style="font-size:14px;margin-top:8px;color:#ddd;">
+  このランキングは、これまでにあなたが築いた企業の成果です。
+  人材配置と賃金戦略の工夫が、長期的な利益を左右します。
+  </div>
+  <div>
+    <button id="btnRestart">もう一度プレイ</button>
+    <button id="btnResetScores">スコア履歴リセット</button>
+  </div>
+</div>
+
+<script>
+// ==========================
+// 企業経営シミュレータ本体
+// ==========================
+(() => {
+// --- 状態変数 ---
+let year = 1;
+let MAX_YEAR = 5;
+let budget = 1000;
+let profit = 0;
+let totalProfit = 0;
+let customerBase = 0; // 顧客基盤（ストック）
+let employees = []; // { role, wage, productivity, tenure }
+let gameOver = false;
+
+// 職種定義
+const ROLES = {
+  manufacturing: { base: 40, label: "製造" },
+  sales: { base: 30, label: "営業" },
+  accounting: { base: 20, label: "経理" },
+  legal: { base: 15, label: "法務" }
+};
+
+// 学習効果パラメータ
+const LEARNING_THRESHOLD = 0.2; // 高賃金比率20%
+const LEARNING_BONUS = 0.15;    // 生産性+15%
+
+// 賃金倍率
+function wageMultiplier(wage) {
+  if (wage === 'low') return 0.6;
+  if (wage === 'mid') return 1.0;
+  if (wage === 'high') return 1.4;
+  return 1.0;
+}
+function wageCost(wage) {
+  if (wage === 'low') return 50;
+  if (wage === 'mid') return 100;
+  if (wage === 'high') return 200;
+  return 100;
+}
+
+// 離職確率
+function quitProbability(wage) {
+  if (wage === 'low') return 0.30;
+  if (wage === 'mid') return 0.10;
+  if (wage === 'high') return 0.02;
+  return 0.1;
+}
+
+// --- ログ用メッセージテンプレート ---
+const HIRE_MESSAGES = {
+  manufacturing: {
+    low: [
+      "製造現場に新人が加わった。まずは基本作業から覚えてもらおう。"
+    ],
+    mid: [
+      "製造職の新入社員が入社した。やる気はありそうだ。"
+    ],
+    high: [
+      "他社で実績のある優秀な製造担当を中途採用できた。",
+      "現場改善の経験を持つ即戦力の製造人材が加わった。"
+    ]
+  },
+  sales: {
+    low: [
+      "営業部に新人が配属された。まずは先輩同行から始めてもらおう。"
+    ],
+    mid: [
+      "営業職の新入社員が入社した。やる気は十分ありそうだ。"
+    ],
+    high: [
+      "大口顧客を担当してきた優秀な営業を獲得できた。",
+      "他社で成果を出してきた即戦力営業がチームに加わった。"
+    ]
+  },
+  accounting: {
+    low: [
+      "経理部に新人が入った。基礎業務を覚えてもらおう。"
+    ],
+    mid: [
+      "経理担当を採用した。堅実に業務をこなしてくれそうだ。"
+    ],
+    high: [
+      "管理体制を強化できる経験豊富な経理人材を迎え入れた。"
+    ]
+  },
+  legal: {
+    low: [
+      "法務部に新人が加わった。まずは契約チェックの補助からだ。"
+    ],
+    mid: [
+      "法務担当を採用した。社内ルールの整備が進みそうだ。"
+    ],
+    high: [
+      "他社で法務責任者を務めた経験者を採用できた。",
+      "リスク管理に強い法務の専門家が加わった。"
+    ]
+  }
+};
+
+// --- UI参照 ---
+const yearElem = document.getElementById('year');
+const remainingYearsElem = document.getElementById('remainingYears');
+const budgetElem = document.getElementById('budget');
+const customerBaseElem = document.getElementById('customerBase');
+const employeeCountElem = document.getElementById('employeeCount');
+const profitElem = document.getElementById('profit');
+const scoreElem = document.getElementById('score');
+const hireStatusElem = document.getElementById('hireStatus');
+const nextYearBtn = document.getElementById('nextYearBtn');
+const eventLogElem = document.getElementById('eventLog');
+
+// --- 企業動向ログ ---
+function addLog(message, type = 'info') {
+  const div = document.createElement('div');
+  div.className = `logItem ${type}`;
+  div.innerHTML = `
+    <div class="logYear">年 ${year}</div>
+    <div>${message}</div>
+  `;
+  eventLogElem.prepend(div);
+}
+
+const btnManufacturing = document.getElementById('btn-manufacturing');
+const btnSales = document.getElementById('btn-sales');
+const btnAccounting = document.getElementById('btn-accounting');
+const btnLegal = document.getElementById('btn-legal');
+const wageSelect = document.getElementById('wageSelect');
+
+const fireSelect = document.getElementById('fireSelect');
+const fireBtn = document.getElementById('fireBtn');
+
+const gameOverElem = document.getElementById('gameOver');
+const finalScoreElem = document.getElementById('finalScore');
+const scoreHistoryList = document.getElementById('scoreHistoryList');
+const btnRestart = document.getElementById('btnRestart');
+const btnResetScores = document.getElementById('btnResetScores');
+const scoreHintElem = document.getElementById('scoreHint');
+
+const orgSummaryElem = document.getElementById('orgSummary');
+const byRoleElem = document.getElementById('byRole');
+const byWageElem = document.getElementById('byWage');
+const roleWageTableBody = document.querySelector('#roleWageTable tbody');
+
+// --- UI更新 ---
+function updateUI() {
+  yearElem.textContent = year;
+  remainingYearsElem.textContent = Math.max(0, (MAX_YEAR - year + 1));
+  budgetElem.textContent = budget;
+  customerBaseElem.textContent = customerBase;
+  employeeCountElem.textContent = employees.length;
+  profitElem.textContent = profit;
+  scoreElem.textContent = totalProfit;
+  nextYearBtn.disabled = gameOver;
+  btnManufacturing.disabled = gameOver;
+  btnSales.disabled = gameOver;
+  btnAccounting.disabled = gameOver;
+  btnLegal.disabled = gameOver;
+  wageSelect.disabled = gameOver;
+  fireSelect.disabled = gameOver;
+  fireBtn.disabled = gameOver;
+
+  renderOrgPanel();
+}
+
+// --- 採用処理 ---
+function selectHire(role) {
+  if (gameOver) return;
+  const wage = wageSelect.value;
+  hire(role, wage);
+}
+window.selectHire = selectHire;
+
+function hire(role, wage) {
+  const cost = wageCost(wage);
+  if (budget < cost) {
+    hireStatusElem.textContent = '予算不足で採用できません。';
+    return;
+  }
+  budget -= cost;
+  employees.push({
+    role,
+    wage,
+    productivity: ROLES[role].base * wageMultiplier(wage),
+    tenure: 0   // 在職年数（採用年は0）
+  });
+  hireStatusElem.textContent = `${ROLES[role].label}（${wageLabel(wage)}）を採用しました。`;
+  const msgs = HIRE_MESSAGES[role][wage];
+  const msg = msgs[Math.floor(Math.random() * msgs.length)];
+  addLog(msg, wage === 'high' ? 'good' : 'info');
+  updateUI();
+}
+function wageLabel(wage) {
+  if (wage === 'low') return '低賃金（50）';
+  if (wage === 'mid') return '標準賃金（100）';
+  if (wage === 'high') return '高賃金（200）';
+  return wage;
+}
+
+// --- 職種・賃金別カウント ---
+function buildStats() {
+  let stats = {
+    manufacturing: { low: 0, mid: 0, high: 0 },
+    sales: { low: 0, mid: 0, high: 0 },
+    accounting: { low: 0, mid: 0, high: 0 },
+    legal: { low: 0, mid: 0, high: 0 }
+  };
+  employees.forEach(e => {
+    stats[e.role][e.wage]++;
+  });
+  return stats;
+}
+
+// --- 能力値（生産/販売）とバックオフィス指標 ---
+function computeCapabilities(stats) {
+  const productionCap =
+    40 * stats.manufacturing.low +
+    60 * stats.manufacturing.mid +
+    90 * stats.manufacturing.high;
+
+  let salesCap =
+    30 * stats.sales.low +
+    50 * stats.sales.mid +
+    80 * stats.sales.high;
+
+  const totalSales = stats.sales.low + stats.sales.mid + stats.sales.high;
+  const highShareSales = totalSales > 0 ? (stats.sales.high / totalSales) : 0;
+
+  if (totalSales > 0 && highShareSales >= LEARNING_THRESHOLD) {
+    salesCap *= (1 + LEARNING_BONUS);
+  }
+
+  const backOfficeCount =
+    stats.accounting.low + stats.accounting.mid + stats.accounting.high +
+    stats.legal.low + stats.legal.mid + stats.legal.high;
+
+  let backOfficeMult = 1.0;
+  if (backOfficeCount >= 2) backOfficeMult = 1.1;
+  if (backOfficeCount >= 4) backOfficeMult = 1.2;
+
+  return { productionCap, salesCap, totalSales, backOfficeCount, backOfficeMult };
+}
+
+const ACQUISITION_RATE = 0.08;
+const BASE_ARPU = 40;
+const CHURN_BASE = 0.05;
+
+function computeChurnRate(backOfficeCount) {
+  if (backOfficeCount >= 4) return 0.02;
+  if (backOfficeCount >= 2) return 0.03;
+  return CHURN_BASE;
+}
+
+function acquireCustomers(caps) {
+  const bottleneck = Math.min(caps.productionCap, caps.salesCap);
+  return Math.max(0, Math.floor(ACQUISITION_RATE * bottleneck * caps.backOfficeMult));
+}
+
+function computeARPU(stats, caps) {
+  const totalSales = caps.totalSales;
+  if (totalSales === 0) return 0;
+  const quality = (1 * stats.sales.mid + 2 * stats.sales.high) / totalSales;
+  return Math.floor(BASE_ARPU * (1.0 + 0.25 * quality));
+}
+
+function computeGrossRevenue(customerBaseNow, arpu) {
+  return Math.floor(customerBaseNow * arpu);
+}
+
+function nextYear() {
+  if (gameOver) return;
+
+  if (year > MAX_YEAR) {
+    showGameOver();
+    return;
+  }
+
+  // ===== 年末決算 =====
+  const stats = buildStats();
+  const caps = computeCapabilities(stats);
+
+  const churnRate = computeChurnRate(caps.backOfficeCount);
+  const churn = Math.floor(customerBase * churnRate);
+  customerBase = Math.max(0, customerBase - churn);
+
+  const newCustomers = acquireCustomers(caps);
+  customerBase += newCustomers;
+
+  const arpu = computeARPU(stats, caps);
+  const grossRevenue = computeGrossRevenue(customerBase, arpu);
+
+  const totalWageCost = employees
+    .filter(e => e.tenure >= 1)
+    .reduce((s,e)=>s + wageCost(e.wage), 0);
+
+  profit = grossRevenue - totalWageCost;
+  totalProfit += profit;
+  budget += profit;
+
+  hireStatusElem.textContent =
+    `新規顧客:${newCustomers} / 顧客基盤:${customerBase} / 単価:${arpu} / 売上:${grossRevenue} / 人件費:${totalWageCost} / 純利益:${profit}`;
+
+  addLog(
+    `年次決算レポート：<br>
+   ・既存顧客数：${customerBase - newCustomers}（離脱率 ${(churnRate*100).toFixed(1)}%）<br>
+   ・新規顧客獲得：${newCustomers}件（営業職 ${caps.totalSales}人）<br>
+   ・平均受注単価：${arpu}<br>
+   ・売上高：${grossRevenue}<br>
+   ・人件費：${totalWageCost}<br>
+   ・純利益：${profit}`,
+    profit >= 0 ? 'good' : 'bad'
+  );
+
+  if (caps.totalSales === 0) {
+    addLog("営業人員が不足しているため、新規顧客を獲得できていない。営業採用を検討すべきだ。", 'info');
+  }
+  if (caps.backOfficeCount < 2) {
+    addLog("管理部門が手薄だ。離職や顧客離脱のリスクが高まっている。", 'info');
+  }
+  if (profit > 0 && caps.totalSales > 0) {
+    addLog("現在の組織構成は機能している。どの部門を強化すると成長が加速するか考えよう。", 'info');
+  }
+
+  // ===== 年替わり =====
+  year++;
+  employees.forEach(e => e.tenure++);
+
+  let quitLog = [];
+  employees = employees.filter(e => {
+    if (Math.random() < quitProbability(e.wage)) {
+      quitLog.push(`${ROLES[e.role].label}（${wageLabel(e.wage)}）`);
+      return false;
+    }
+    return true;
+  });
+  if (quitLog.length > 0) {
+    hireStatusElem.textContent += ` / 離職:${quitLog.join('、')}`;
+    quitLog.forEach(msg => {
+      addLog(`${msg} が退職してしまった。対策を考えないといけない。`, 'bad');
+    });
+  }
+
+  updateUI();
+
+  if (year > MAX_YEAR) {
+    showGameOver();
+  }
+}
+window.nextYear = nextYear;
+
+// --- 解雇処理 ---
+fireBtn.addEventListener('click', () => {
+  if (employees.length === 0) return;
+  const idx = parseInt(fireSelect.value, 10);
+  if (isNaN(idx)) return;
+  const cost = 50;
+  if (budget < cost) {
+    alert('解雇コストを支払えません');
+    return;
+  }
+  const fired = employees.splice(idx,1)[0];
+  budget -= cost;
+  hireStatusElem.textContent =
+    `${ROLES[fired.role].label}（${wageLabel(fired.wage)}）を解雇しました（コスト50）。`;
+  updateUI();
+});
+
+// --- 会社タイプ診断ロジック ---
+function diagnoseCompanyType(stats, caps) {
+  if (caps.totalSales >= 5 && caps.backOfficeCount < 2) {
+    return "成長特化型（攻めの営業重視）";
+  }
+  if (caps.backOfficeCount >= 4 && caps.totalSales < 3) {
+    return "安定重視型（管理体制万全）";
+  }
+  if (caps.totalSales >= 3 && caps.backOfficeCount >= 2) {
+    return "バランス型（分業と補完性が機能）";
+  }
+  return "試行錯誤型（組織構築の途上）";
+}
+
+// --- スコア履歴 ---
+function loadScoreHistory() {
+  const data = localStorage.getItem('orgsim_scores');
+  if (!data) return [];
+  try {
+    const arr = JSON.parse(data);
+    if (Array.isArray(arr)) {
+      return arr.map(e =>
+        typeof e === 'number'
+          ? { score: e, year: 0, employees: 0, sales: 0, manufacturing: 0, backOffice: 0 }
+          : e
+      );
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+function saveScoreHistory(scores) {
+  localStorage.setItem('orgsim_scores', JSON.stringify(scores));
+}
+function addScoreToHistory(score) {
+  const stats = buildStats();
+  const snapshot = {
+    score,
+    year: year - 1,
+    employees: employees.length,
+    sales: stats.sales.low + stats.sales.mid + stats.sales.high,
+    manufacturing: stats.manufacturing.low + stats.manufacturing.mid + stats.manufacturing.high,
+    backOffice:
+      stats.accounting.low + stats.accounting.mid + stats.accounting.high +
+      stats.legal.low + stats.legal.mid + stats.legal.high
+  };
+
+  const scores = loadScoreHistory();
+  scores.push(snapshot);
+  scores.sort((a, b) => b.score - a.score);
+  while (scores.length > 5) scores.pop();
+  saveScoreHistory(scores);
+  return scores;
+}
+function renderScoreHistory(scores) {
+  scoreHistoryList.innerHTML = '';
+  if (scores.length === 0) {
+    const li = document.createElement('li');
+    li.textContent = 'スコア履歴はありません。';
+    scoreHistoryList.appendChild(li);
+    return;
+  }
+
+  const rankIcons = ["🥇", "🥈", "🥉", "🎖️", "🎖️"];
+
+  scores.forEach((entry, i) => {
+    const li = document.createElement('li');
+    li.style.cursor = 'pointer';
+    li.textContent = `${rankIcons[i]} ${i + 1}位：${entry.score}`;
+
+    li.addEventListener('click', () => {
+      alert(
+        `【当時の組織構成】\n` +
+        `・プレイ年数：${entry.year}年\n` +
+        `・従業員数：${entry.employees}人\n` +
+        `・営業：${entry.sales}人\n` +
+        `・製造：${entry.manufacturing}人\n` +
+        `・管理部門：${entry.backOffice}人\n\n` +
+        `この組織構成が、スコア ${entry.score} を生みました。`
+      );
+    });
+
+    scoreHistoryList.appendChild(li);
+  });
+}
+const scoreHints = [
+  "製造と営業の組み合わせが売上を伸ばします",
+  "法務・経理は直接利益を生まないが安定性を高めます",
+  "高賃金は常に最適とは限らないが、要所では重要です",
+  "分業と補完性が企業成果を決めます",
+  "高賃金の人材は、自身だけでなく周囲の生産性も高めます"
+];
+
+function showGameOver() {
+  gameOver = true;
+  finalScoreElem.textContent = totalProfit;
+  const stats = buildStats();
+  const caps = computeCapabilities(stats);
+  const companyType = diagnoseCompanyType(stats, caps);
+
+  scoreHintElem.innerHTML =
+    `あなたの会社タイプ：<strong>${companyType}</strong><br>
+     人材配置と賃金戦略が、この結果を生みました。`;
+
+  const scores = addScoreToHistory(totalProfit);
+  renderScoreHistory(scores);
+  gameOverElem.style.display = 'flex';
+  updateUI();
+}
+function hideGameOver() {
+  gameOverElem.style.display = 'none';
+  gameOver = false;
+  updateUI();
+}
+
+// --- リセット処理 ---
+function resetGame() {
+  year = 1;
+  budget = 1000;
+  profit = 0;
+  totalProfit = 0;
+  customerBase = 0;
+  employees = [];
+  hireStatusElem.textContent = '';
+  eventLogElem.innerHTML = '';
+  addLog('新しい企業経営が始まった。まずはどんな組織を作るか考えよう。', 'info');
+  hideGameOver();
+  updateUI();
+  renderOrgPanel();
+}
+btnRestart.addEventListener('click', () => {
+  resetGame();
+});
+btnResetScores.addEventListener('click', () => {
+  localStorage.removeItem('orgsim_scores');
+  renderScoreHistory([]);
+});
+
+// --- 初期スコア履歴表示 ---
+renderScoreHistory(loadScoreHistory());
+
+// --- スタート画面ロジック ---
+const startScreen = document.getElementById('startScreen');
+const startGameBtn = document.getElementById('startGameBtn');
+startGameBtn.addEventListener('click', () => {
+  const durationInput = document.querySelector('input[name="duration"]:checked');
+  MAX_YEAR = parseInt(durationInput.value, 10);
+  startScreen.style.display = 'none';
+  resetGame();
+});
+
+// --- 組織状況パネル描画 ---
+function renderOrgPanel() {
+  // 集計
+  let roleCount = {};
+  let wageCount = { low: 0, mid: 0, high: 0 };
+
+  employees.forEach(e => {
+    roleCount[e.role] = (roleCount[e.role] || 0) + 1;
+    wageCount[e.wage]++;
+  });
+
+  // サマリー
+  const totalWage = employees
+    .filter(e => e.tenure >= 1)
+    .reduce((s,e)=>s + wageCost(e.wage), 0);
+  orgSummaryElem.textContent =
+    `顧客基盤 ${customerBase} / 従業員数 ${employees.length}人 / 年間人件費 ${totalWage}`;
+
+  // 職種別
+  byRoleElem.innerHTML = '';
+  Object.keys(roleCount).forEach(r => {
+    const li = document.createElement('li');
+    li.textContent = `${ROLES[r].label}: ${roleCount[r]}人`;
+    byRoleElem.appendChild(li);
+  });
+  if (employees.length === 0) {
+    byRoleElem.innerHTML = '<li>未採用</li>';
+  }
+
+  // 賃金別
+  byWageElem.innerHTML = '';
+  const wageLabels = {
+    low: '低賃金（50）',
+    mid: '標準賃金（100）',
+    high: '高賃金（200）'
+  };
+  Object.keys(wageCount).forEach(w => {
+    const li = document.createElement('li');
+    li.textContent = `${wageLabels[w]}: ${wageCount[w]}人`;
+    byWageElem.appendChild(li);
+  });
+
+  // 解雇対象リスト更新
+  fireSelect.innerHTML = '';
+  employees.forEach((e, idx) => {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = `${ROLES[e.role].label}（${wageLabel(e.wage)}）`;
+    fireSelect.appendChild(opt);
+  });
+  if (employees.length === 0) {
+    const opt = document.createElement('option');
+    opt.textContent = '解雇対象なし';
+    fireSelect.appendChild(opt);
+  }
+
+  // --- 職種×賃金 表 ---
+  roleWageTableBody.innerHTML = '';
+  Object.keys(ROLES).forEach(role => {
+    const tr = document.createElement('tr');
+
+    const low = employees.filter(e => e.role === role && e.wage === 'low').length;
+    const mid = employees.filter(e => e.role === role && e.wage === 'mid').length;
+    const high = employees.filter(e => e.role === role && e.wage === 'high').length;
+
+    tr.innerHTML = `
+      <td>${ROLES[role].label}</td>
+      <td style="text-align:center">${low}</td>
+      <td style="text-align:center">${mid}</td>
+      <td style="text-align:center">${high}</td>
+    `;
+    roleWageTableBody.appendChild(tr);
+  });
+}
+
+// 初期UI
+updateUI();
+})();
+</script>
+
+</body>
+</html>
